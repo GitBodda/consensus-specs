@@ -163,6 +163,7 @@ jobs:
             --head "${{ github.event.pull_request.head.sha }}" \
             --repo-slug "${{ github.repository }}" \
             --map-repo ./lighthouse \
+            --deterministic \
             --out specguard.json
           cat specguard.json
 
