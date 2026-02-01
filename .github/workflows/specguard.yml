@@ -149,6 +149,9 @@ jobs:
       - name: Install SpecGuard from source
         run: |
           pip install -e ./SpecGuard-LLM
+          # Copy prompts and schemas to working directory
+          cp -r ./SpecGuard-LLM/prompts ./prompts
+          cp -r ./SpecGuard-LLM/schemas ./schemas
 
       - name: Run SpecGuard (no external LLM)
         env:
