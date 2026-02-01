@@ -376,6 +376,7 @@ def on_block(store: Store, signed_block: SignedBeaconBlock) -> None:
 
     # Check if blob data is available
     # If not, this payload MAY be queued and subsequently considered when blob data becomes available
+    # Implementations MUST NOT re-broadcast a sidecar until deferred validation succeeds.
     assert is_data_available(hash_tree_root(block))
 
     # Check the block is valid and compute the post-state
