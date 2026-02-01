@@ -1,0 +1,41 @@
+name: SpecGuard
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  specguard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install SpecGuard (from GitHub repo)
+        run: |
+          pip install specguard
+      - name: Run SpecGuard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SPEC_GUARD_LLM_PROVIDER: openai
+          SPEC_GUARD_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPEC_GUARD_OPENAI_MODEL: gpt-4o-mini
+          SPEC_GUARD_OPENAI_BASE_URL: https://api.openai.com/v1
+        run: |
+          specguard github-action \
+            --repo . \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --repo-slug "${{ github.repository }}" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --map-repo /workspaces/lighthouse \
+            --fail-on high \
+            --out specguard.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: specguard-report
+          path: specguard.json
