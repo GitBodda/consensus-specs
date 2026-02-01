@@ -34,6 +34,95 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Fix SpecGuard cli.py indentation
+        run: |
+          cat > /tmp/fix_cli.py << 'PYEOF'
+          import re
+          with open('./SpecGuard-LLM/src/specguard/cli.py', 'r') as f:
+              content = f.read()
+          # Fix the broken indentation in analyze function
+          old = ''') -> None:
+
+    """Analyze base..head diffs and output JSON report."""
+    cfg = load_config(config_path)
+effective_repo_slug = repo_slug or cfg.repo_slug
+effective_map_repo = map_repo or cfg.map_repo
+effective_extra_redact = list(cfg.extra_redact) + (list(extra_redact) if extra_redact else [])
+
+cfg = load_config(config_path)
+effective_map_repo = map_repo or cfg.map_repo
+
+report = analyze_repo(
+    repo=repo,
+    base=base,
+    head=head,
+    out_path=Path(out_path),
+    deterministic=deterministic,
+    cache_dir=(Path(cache_dir) if cache_dir else None),
+    repo_slug=repo_slug,
+    map_repo=effective_map_repo,
+    search_backend=search_backend or cfg.search_backend,
+    max_keyword_hits=max_keyword_hits or cfg.max_keyword_hits,
+    prefer_tests=(not no_prefer_tests) and cfg.prefer_tests,
+    max_findings=max_findings or cfg.max_findings,
+    schema_path=Path(__file__).resolve().parents[3] / "schemas" / "report.schema.json",
+)
+md = summarize_report_md(report)
+
+    if comment:
+        from .github import post_pr_comment
+        post_pr_comment(repo_slug=repo_slug, pr_number=pr_number, body_md=md)
+
+    if check_run:
+        from .github import upsert_check_run
+        # conclusion derived from fail status
+        conclusion = "failure" if _exit_code(report, fail_on) != 0 else "success"
+        upsert_check_run(
+            repo_slug=repo_slug,
+            head_sha=head,
+            conclusion=conclusion,
+            title="SpecGuard LLM",
+            summary=md[:65000],
+        )
+
+    code = _exit_code(report, fail_on)
+    if code != 0:
+        raise SystemExit(code)'''
+          new = ''') -> None:
+    """Analyze base..head diffs and output JSON report."""
+    cfg = load_config(config_path)
+    effective_repo_slug = repo_slug or cfg.repo_slug
+    effective_map_repo = map_repo or cfg.map_repo
+    effective_extra_redact = list(cfg.extra_redact) + (list(extra_redact) if extra_redact else [])
+
+    report = analyze_repo(
+        repo=repo,
+        base=base,
+        head=head,
+        out_path=Path(out_path),
+        deterministic=deterministic,
+        cache_dir=(Path(cache_dir) if cache_dir else None),
+        repo_slug=effective_repo_slug,
+        map_repo=effective_map_repo,
+        search_backend=search_backend or cfg.search_backend,
+        max_keyword_hits=max_keyword_hits or cfg.max_keyword_hits,
+        prefer_tests=(not no_prefer_tests) and cfg.prefer_tests,
+        max_findings=max_findings or cfg.max_findings,
+        schema_path=Path(__file__).resolve().parents[3] / "schemas" / "report.schema.json",
+    )
+    md = summarize_report_md(report)
+    console.print(md)
+
+    code = _exit_code(report, "HIGH")
+    if code != 0:
+        raise SystemExit(code)'''
+          content = content.replace(old, new)
+          with open('./SpecGuard-LLM/src/specguard/cli.py', 'w') as f:
+              f.write(content)
+          PYEOF
+          python /tmp/fix_cli.py
+          python -m py_compile ./SpecGuard-LLM/src/specguard/cli.py
+
       - name: Install SpecGuard from source
         run: |
           pip install -e ./SpecGuard-LLM
