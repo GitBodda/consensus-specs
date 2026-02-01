@@ -2,29 +2,45 @@ name: SpecGuard
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+
 permissions:
   contents: read
   pull-requests: write
+
 jobs:
   specguard:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout PR repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Checkout SpecGuard-LLM tool
+        uses: actions/checkout@v4
+        with:
+          repository: GitBodda/SpecGuard-LLM
+          ref: main
+          path: SpecGuard-LLM
+
+      - name: Checkout Lighthouse client (for mapping)
+        uses: actions/checkout@v4
+        with:
+          repository: sigp/lighthouse
+          ref: stable
+          path: lighthouse
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install SpecGuard (from GitHub repo)
+
+      - name: Install SpecGuard from source
         run: |
-          pip install specguard
-      - name: Run SpecGuard
+          pip install -e ./SpecGuard-LLM
+
+      - name: Run SpecGuard (no external LLM)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SPEC_GUARD_LLM_PROVIDER: openai
-          SPEC_GUARD_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SPEC_GUARD_OPENAI_MODEL: gpt-4o-mini
-          SPEC_GUARD_OPENAI_BASE_URL: https://api.openai.com/v1
         run: |
           specguard github-action \
             --repo . \
@@ -32,9 +48,10 @@ jobs:
             --head "${{ github.event.pull_request.head.sha }}" \
             --repo-slug "${{ github.repository }}" \
             --pr-number "${{ github.event.pull_request.number }}" \
-            --map-repo /workspaces/lighthouse \
+            --map-repo ./lighthouse \
             --fail-on high \
             --out specguard.json
+
       - uses: actions/upload-artifact@v4
         with:
           name: specguard-report
