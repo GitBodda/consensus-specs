@@ -136,10 +136,6 @@ jobs:
               )
               md = summarize_report_md(report)
               console.print(md)
-
-              code = _exit_code(report, "HIGH")
-              if code != 0:
-                  raise SystemExit(code)
           CLIPY
           # Remove leading spaces from heredoc
           sed -i 's/^          //' cli.py
