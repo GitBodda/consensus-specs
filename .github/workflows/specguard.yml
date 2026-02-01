@@ -153,9 +153,13 @@ jobs:
           cp -r ./SpecGuard-LLM/prompts ./prompts
           cp -r ./SpecGuard-LLM/schemas ./schemas
 
-      - name: Run SpecGuard (no external LLM)
+      - name: Run SpecGuard with Gemini
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SPEC_GUARD_LLM_PROVIDER: openai
+          SPEC_GUARD_OPENAI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SPEC_GUARD_OPENAI_MODEL: gemini-2.0-flash
+          SPEC_GUARD_OPENAI_BASE_URL: https://generativelanguage.googleapis.com/v1beta/openai
         run: |
           specguard analyze \
             --repo . \
