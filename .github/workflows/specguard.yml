@@ -156,6 +156,7 @@ jobs:
           SPEC_GUARD_OPENAI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SPEC_GUARD_OPENAI_MODEL: gemini-2.0-flash
           SPEC_GUARD_OPENAI_BASE_URL: https://generativelanguage.googleapis.com/v1beta/openai
+          SPEC_GUARD_LLM_TEMPERATURE: "0"
         run: |
           specguard analyze \
             --repo . \
@@ -163,7 +164,6 @@ jobs:
             --head "${{ github.event.pull_request.head.sha }}" \
             --repo-slug "${{ github.repository }}" \
             --map-repo ./lighthouse \
-            --deterministic \
             --out specguard.json
           cat specguard.json
 
